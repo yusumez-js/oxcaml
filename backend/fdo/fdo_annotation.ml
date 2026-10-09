@@ -1,10 +1,10 @@
 (******************************************************************************
  *                                  OxCaml                                    *
- *                        Basile Clément, OCamlPro                            *
+ *                               Jane Street                                  *
  * -------------------------------------------------------------------------- *
  *                               MIT License                                  *
  *                                                                            *
- * Copyright (c) 2024 Jane Street Group LLC                                   *
+ * Copyright (c) 2026 Jane Street Group LLC                                   *
  * opensource-contacts@janestreet.com                                         *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -26,35 +26,22 @@
  * DEALINGS IN THE SOFTWARE.                                                  *
  ******************************************************************************)
 
-type t =
-  { likelihood : Likelihood.t;
-    fdo_annotation : Fdo_annotation.t
-  }
+type t = Fdo_counter.t list
 
-let create ~likelihood ~fdo_annotation = { likelihood; fdo_annotation }
+let empty = []
 
-let from_likelihood likelihood =
-  { likelihood; fdo_annotation = Fdo_annotation.empty }
+let is_empty t = List.is_empty t
 
-let default = from_likelihood Likelihood.default
+let of_list counters = Fdo_counter.add_all [] counters
 
-let cold = from_likelihood Likelihood.cold
+let to_list t = t
 
-let likelihood { likelihood; _ } = likelihood
+let combine t1 t2 = Fdo_counter.add_all t1 t2
 
-let with_likelihood t likelihood = { t with likelihood }
+let equal t1 t2 = List.equal Fdo_counter.equal t1 t2
 
-let fdo_annotation { fdo_annotation; _ } = fdo_annotation
-
-let with_fdo_annotation t fdo_annotation = { t with fdo_annotation }
-
-let sum_list annots =
-  let likelihood = Likelihood.sum_list (List.map likelihood annots) in
-  let fdo_annotation =
-    List.fold_left
-      (fun acc annot -> Fdo_annotation.combine acc annot.fdo_annotation)
-      Fdo_annotation.empty annots
-  in
-  create ~likelihood ~fdo_annotation
-
-let add t1 t2 = sum_list [t1; t2]
+let print ppf t =
+  Format.fprintf ppf "@[<hov 1>(%a)@]"
+    (Format.pp_print_list ~pp_sep:Format.pp_print_space (fun ppf counter ->
+         Format.pp_print_string ppf (Fdo_counter.to_string counter)))
+    t

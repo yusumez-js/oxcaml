@@ -1,10 +1,10 @@
 (******************************************************************************
  *                                  OxCaml                                    *
- *                        Basile Clément, OCamlPro                            *
+ *                               Jane Street                                  *
  * -------------------------------------------------------------------------- *
  *                               MIT License                                  *
  *                                                                            *
- * Copyright (c) 2024 Jane Street Group LLC                                   *
+ * Copyright (c) 2026 Jane Street Group LLC                                   *
  * opensource-contacts@janestreet.com                                         *
  *                                                                            *
  * Permission is hereby granted, free of charge, to any person obtaining a    *
@@ -26,35 +26,25 @@
  * DEALINGS IN THE SOFTWARE.                                                  *
  ******************************************************************************)
 
-type t =
-  { likelihood : Likelihood.t;
-    fdo_annotation : Fdo_annotation.t
-  }
+(** The counters attached to one point of the program, see [Fdo_counter]. The
+    counters can represent either a control-flow edge, such as a switch arm, or
+    a function entry. Callsites can have at most one counter and hence don't use
+    this type. *)
 
-let create ~likelihood ~fdo_annotation = { likelihood; fdo_annotation }
+type t
 
-let from_likelihood likelihood =
-  { likelihood; fdo_annotation = Fdo_annotation.empty }
+val empty : t
 
-let default = from_likelihood Likelihood.default
+val is_empty : t -> bool
 
-let cold = from_likelihood Likelihood.cold
+val of_list : Fdo_counter.t list -> t
 
-let likelihood { likelihood; _ } = likelihood
+val to_list : t -> Fdo_counter.t list
 
-let with_likelihood t likelihood = { t with likelihood }
+(** Combines two counter sets. Edges that are merged carry the union of their
+    counters. Duplicates are removed. *)
+val combine : t -> t -> t
 
-let fdo_annotation { fdo_annotation; _ } = fdo_annotation
+val equal : t -> t -> bool
 
-let with_fdo_annotation t fdo_annotation = { t with fdo_annotation }
-
-let sum_list annots =
-  let likelihood = Likelihood.sum_list (List.map likelihood annots) in
-  let fdo_annotation =
-    List.fold_left
-      (fun acc annot -> Fdo_annotation.combine acc annot.fdo_annotation)
-      Fdo_annotation.empty annots
-  in
-  create ~likelihood ~fdo_annotation
-
-let add t1 t2 = sum_list [t1; t2]
+val print : Format.formatter -> t -> unit
